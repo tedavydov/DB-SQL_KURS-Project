@@ -96,14 +96,29 @@ DELIMITER ;
 
 -- проверка работы процедуры 
 
+-- проверим существующие проекты  
+SELECT pr.id Proj_id, CONCAT_WS(' ', pr.projnum, '/', pr.fullname) Proj_Name 
+    FROM projects pr 
+    ORDER BY Proj_id DESC;
+
 -- должно выдавать ошибку
+
+-- ERROR user_id = 0 !!! не может быть такого id в БД
 CALL project_init(0,'RFCxxxx0','Test Project 0');
+
+-- ERROR user_id = 1 !!! запретный диапазон - администраторы
 CALL project_init(1,'RFCxxxx1','Test Project 1');
+
+-- ERROR user_id = 56 !!! пользователи другого подразделения 
 CALL project_init(56,'RFCxxxx56','Test Project 56');
 
 -- должно работать правильно
 CALL project_init(11,'RFCxxxx11','Test Project 11');
 
+-- проверим что добавлен новый проект с id = 39  
+SELECT pr.id Proj_id, CONCAT_WS(' ', pr.projnum, '/', pr.fullname) Proj_Name 
+    FROM projects pr 
+    ORDER BY Proj_id DESC;
 
 
 -- 6.2) процедура для добавления оборудования в проект
