@@ -148,13 +148,13 @@ SELECT e2.id Equipment_id,
 
 -- 3.2) Группировка списка проектов по количеству использованного оборудования
 
-SELECT CONCAT(pr.projnum, ' / ', pr.fullname) Proj_Name,
-		COUNT(*) Equipment_COUNT
-	FROM projects pr 
-	JOIN proj_links pl ON pl.proj_id = pr.id 
-	JOIN equipments eq ON pl.equipment_id = eq.id 
-	GROUP BY Proj_Name
-	ORDER BY Equipment_COUNT DESC;
+SELECT CONCAT_WS(' ', 'id:(', pr.id , ')',pr.projnum, '/', pr.fullname) Proj_Name,
+        COUNT(*) Equipment_COUNT
+    FROM projects pr 
+    JOIN proj_links pl ON pl.proj_id = pr.id 
+    JOIN equipments eq ON pl.equipment_id = eq.id 
+    GROUP BY Proj_Name
+    ORDER BY Equipment_COUNT DESC;
 
 
 
