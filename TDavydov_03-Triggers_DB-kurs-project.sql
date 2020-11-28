@@ -82,14 +82,14 @@ SELECT c.comment_text
  * */
 DELIMITER //
 DROP PROCEDURE IF EXISTS project_init//
-CREATE PROCEDURE project_init(IN x_user BIGINT UNSIGNED, IN prj_name VARCHAR(255), IN prj_num VARCHAR(100))
+CREATE PROCEDURE project_init(IN x_user BIGINT UNSIGNED, IN prj_num VARCHAR(100), IN prj_name VARCHAR(255))
 BEGIN
 	DECLARE comment_error VARCHAR(100);
 	SET comment_error = CONCAT('PROJECT INIT canseled : ERROR user_id = ', x_user, ' !!!');
 	 IF	(x_user = 0) OR (x_user < 11) OR (x_user > 55) THEN
 		SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = comment_error;
 	 ELSE
-	 	INSERT INTO projects (`user_id`, `projnum`, `fullname`) VALUES (x_user, prj_name, prj_num);
+	 	INSERT INTO projects (`user_id`, `projnum`, `fullname`) VALUES (x_user, prj_num, prj_name);
 	 END IF;
 END//
 DELIMITER ;
@@ -112,7 +112,15 @@ CALL project_init(1,'RFCxxxx1','Test Project 1');
 -- ERROR user_id = 56 !!! пользователи другого подразделения 
 CALL project_init(56,'RFCxxxx56','Test Project 56');
 
+
 -- должно работать правильно
+/* 
+ * ПОДСКАЗКА по процедуре :  
+ * CALL project_init(
+ *                  user_id, 
+ *                  project_num, 
+ *                  project_name);
+*/
 CALL project_init(11,'RFCxxxx11','Test Project 11');
 
 -- проверим что добавлен новый проект с id = 39  
@@ -172,32 +180,47 @@ END//
 DELIMITER ;
 
 
-
 -- проверка работы процедуры : 
 
 -- должно выдавать ошибку
+
+-- ERROR user_id = 0 !!! не может быть такого id в БД 
 CALL project_add_equipment(0,'RFCxxxx11','23');
+
+-- ERROR ! user not is project owner !!! 
+-- пользователь не является владельцем и не может добавлять оборудование в проект  
 CALL project_add_equipment(23,'RFCxxxx11','23');
+
+-- ERROR user_id = 233 !!! запретный диапазон id пользователя  
 CALL project_add_equipment(233,'RFCxxxx11','23');
 
 -- должно работать правильно
+/* 
+ * ПОДСКАЗКА по процедуре :  
+ * CALL project_add_equipment(
+ *                  user_id, 
+ *                  project_num, 
+ *                  equipment_id or equipment_serial); 
+*/
+
+-- сработает если добавлен новый проект по процедуре -- 6.1)
 CALL project_add_equipment(11,'RFCxxxx11','25');
+
 CALL project_add_equipment(24,'35','26');
+
 CALL project_add_equipment(14,'27','ALM3986W95C');
 
-
--- для проверки можно воспользоваться немного доработанным запросом из предыдущей задачи
+-- проверим что добавлено новое оборудование 
+-- воспользуемся немного доработанным запросом из предыдущей задачи :     
 -- 3.1) список проектов и серийных номеров оборудования
-
-SELECT pr.id Proj_id, CONCAT(pr.projnum, ' / ', pr.fullname) Proj_Name,
-		CONCAT(SUBSTRING_INDEX(et.partnumber, ' ', 2), ' (SN: ', eq.serialnum, ' / id: ', eq.id, ')') Equipment
-	FROM projects pr 
-	JOIN proj_links pl ON pl.proj_id = pr.id 
-	JOIN equipments eq ON pl.equipment_id = eq.id 
-	JOIN eq_types et ON et.id = eq.type_id
-	ORDER BY Proj_id DESC;
-
-
+SELECT CONCAT_WS(' ', 'id:(', pr.id, ')', pr.projnum, '/', pr.fullname) Proj_Name,
+       CONCAT_WS(' ', 'id:(', eq.id, ')',SUBSTRING_INDEX(et.partnumber, ' ', 2), ' (SN:', eq.serialnum, ')') Equipment
+    FROM projects pr 
+    JOIN proj_links pl ON pl.proj_id = pr.id 
+    JOIN equipments eq ON pl.equipment_id = eq.id 
+    JOIN eq_types et ON et.id = eq.type_id
+    WHERE pr.id IN ('27','35','39')
+    ORDER BY pr.id DESC;
 
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *   
